@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Number Matcher (Ethereum Mainnet)</title>
+
+    <!-- Ethers.js v6 -->
+    <script src="https://cdn.jsdelivr.net/npm/ethers@6.10.0/dist/ethers.umd.min.js"></script>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #0f172a;
+            color: #e5e7eb;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .card {
+            background: #020617;
+            padding: 24px;
+            border-radius: 10px;
+            width: 420px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.4);
+        }
+
+        h2 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        input, button {
+            width: 100%;
+            padding: 12px;
+            margin-top: 12px;
+            border-radius: 6px;
+            border: none;
+            font-size: 16px;
+        }
+
+        input {
+            background: #020617;
+            color: white;
+            border: 1px solid #334155;
+        }
+
+        button {
+            background: #2563eb;
+            color: white;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #1d4ed8;
+        }
+
+        #status {
+            margin-top: 15px;
+            text-align: center;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h2>🔐 Number Matcher</h2>
+
+    <button onclick="connectWallet()">Connect Wallet</button>
+
+    <input type="number" id="numberInput" placeholder="Enter your number" />
+
+    <button onclick="checkNumber()">Check Number</button>
+
+    <div id="status"></div>
+</div>
+
+<script>
+    let provider;
+    let signer;
+    let contract;
+
+    // 🔴 REPLACE with your MAINNET contract address
+    const CONTRACT_ADDRESS = "0xYOUR_MAINNET_CONTRACT_ADDRESS";
+
+    // Ethereum Mainnet Chain ID
+    const MAINNET_CHAIN_ID = 1;
+
+    // ABI (only what we need)
+    const CONTRACT_ABI = [
+        {
+            "inputs": [{"internalType": "uint256","name": "_number","type": "uint256"}],
+            "name": "checkNumber",
+            "outputs": [{"internalType": "bool","name": "","type": "bool"}],
+            "stateMutability": "view",
+            "type": "function"
+        }
+    ];
+
+    async function connectWallet() {
+        if (!window.ethereum) {
+            alert("MetaMask is required");
+            return;
+        }
+
+        provider = new ethers.BrowserProvider(window.ethereum);
+        await provider.send("eth_requestAccounts", []);
+
+        const network = await provider.getNetwork();
+
+        if (network.chainId !== BigInt(MAINNET_CHAIN_ID)) {
+            document.getElementById("status").innerText =
+                "❌ Please switch MetaMask to Ethereum Mainnet";
+            return;
+        }
+
+        signer = await provider.getSigner();
+        contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
+
+        document.getElementById("status").innerText = "✅ Wallet connected (Mainnet)";
+    }
+
+    async function checkNumber() {
+        if (!contract) {
+            alert("Connect wallet first");
+            return;
+        }
+
+        const value = document.getElementById("numberInput").value;
+
+        if (value === "") {
+            alert("Enter a number");
+            return;
+        }
+
+        try {
+            const result = await contract.checkNumber(value);
+            document.getElementById("status").innerText =
+                result ? "✅ Correct number (true)" : "❌ Incorrect number (false)";
+        } catch (err) {
+            console.error(err);
+            document.getElementById("status").innerText = "⚠️ Contract call failed";
+        }
+    }
+</script>
+
+</body>
+</html>
